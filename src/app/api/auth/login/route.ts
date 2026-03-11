@@ -35,7 +35,7 @@ export async function POST(req: Request) {
             name: "trade_alert_session",
             value: token,
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
+            secure: process.env.SECURE_COOKIES === "true",
             sameSite: "lax",
             path: "/",
             maxAge: 60 * 60 * 24 * 30, // 30 days
