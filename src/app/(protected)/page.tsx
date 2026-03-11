@@ -83,7 +83,22 @@ export default function Dashboard() {
     }, [pagination.page, fetchMessages, fetchWebhookSecret]);
 
     const copyWebhookUrl = () => {
-        navigator.clipboard.writeText(webhookUrl);
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(webhookUrl);
+        } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = webhookUrl;
+            textArea.style.position = "fixed";  // Avoid scrolling to bottom
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('Fallback: copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        }
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };

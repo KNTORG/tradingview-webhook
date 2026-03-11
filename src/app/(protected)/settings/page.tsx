@@ -75,6 +75,12 @@ export default function SettingsPage() {
     const [savingSecret, setSavingSecret] = useState(false);
     const [secretSaved, setSecretSaved] = useState(false);
 
+    // Auth state
+    const [authForm, setAuthForm] = useState({ username: "", password: "" });
+    const [savingAuth, setSavingAuth] = useState(false);
+    const [authSaved, setAuthSaved] = useState(false);
+    const [authError, setAuthError] = useState("");
+
     const generateSecret = () => {
         const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
         const newSecret = Array.from({ length: 16 }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join("");
@@ -157,6 +163,34 @@ export default function SettingsPage() {
             console.error("Failed to save settings:", err);
         } finally {
             setSavingSecret(false);
+        }
+    };
+
+    const saveAuthCredentials = async () => {
+        if (!authForm.username || !authForm.password) {
+            setAuthError("Both username and password are required.");
+            return;
+        }
+        setSavingAuth(true);
+        setAuthError("");
+        try {
+            const res = await fetch("/api/auth/update", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(authForm),
+            });
+            if (res.ok) {
+                setAuthSaved(true);
+                setAuthForm({ username: "", password: "" });
+                setTimeout(() => setAuthSaved(false), 2000);
+            } else {
+                const data = await res.json();
+                setAuthError(data.error || "Failed to update credentials");
+            }
+        } catch (err) {
+            setAuthError("Failed to update credentials");
+        } finally {
+            setSavingAuth(false);
         }
     };
 
@@ -586,7 +620,20 @@ export default function SettingsPage() {
                             })()}
 
                             {/* Schedule Rules */}
-                            <div className="divide-y divide-warm-100">
+                            <div className="divide-y divide-warm-100 relative">
+                                {(() => {
+                                    const globalRule = speaker.rules.find((r) => r.dayOfWeek === -1);
+                                    const hasActiveGlobalTime = globalRule && globalRule.enabled;
+                                    
+                                    return (
+                                        <>
+                                            {hasActiveGlobalTime && (
+                                                <div className="absolute inset-0 bg-white/60 backdrop-blur-[1px] z-10 flex items-center justify-center">
+                                                    <div className="bg-white/90 px-4 py-2 rounded-xl shadow-sm border border-warm-200 text-sm font-medium text-gray-500 backdrop-blur-md">
+                                                        Daily settings disabled while Global Time is active
+                                                    </div>
+                                                </div>
+                                            )}
                                 {DAYS.map((day, dayIndex) => {
                                     const dayRules = speaker.rules.filter(
                                         (r) => r.dayOfWeek === dayIndex
@@ -683,6 +730,9 @@ export default function SettingsPage() {
                                         </div>
                                     );
                                 })}
+                                        </>
+                                    );
+                                })()}
                             </div>
                         </div>
                     ))}
@@ -796,7 +846,7 @@ export default function SettingsPage() {
             </div>
 
             {/* Application Settings Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-sm border border-warm-200 overflow-hidden mt-6">
                 <div className="px-5 py-4 border-b border-warm-200">
                     <div className="flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
@@ -853,6 +903,51 @@ export default function SettingsPage() {
                                 title="Generate random secret"
                             >
                                 ⚡ Generate
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="max-w-2xl pt-6 border-t border-warm-100 mt-6">
+                        <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                            Dashboard Security (Login Credentials)
+                        </label>
+                        <p className="text-xs text-gray-500 mb-3">
+                            Update the username and password used to access this dashboard.
+                        </p>
+                        {authError && (
+                            <div className="mb-3 p-3 text-xs text-red-600 bg-red-50 border border-red-100 rounded-xl">
+                                {authError}
+                            </div>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">New Username</label>
+                                <input
+                                    type="text"
+                                    value={authForm.username}
+                                    onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })}
+                                    placeholder="Enter new username"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 bg-warm-50 text-sm focus:outline-none focus:ring-2 focus:ring-coral-300 transition-all mb-2"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">New Password</label>
+                                <input
+                                    type="password"
+                                    value={authForm.password}
+                                    onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                                    placeholder="Enter new password"
+                                    className="w-full px-4 py-2.5 rounded-xl border border-warm-200 bg-warm-50 text-sm focus:outline-none focus:ring-2 focus:ring-coral-300 transition-all mb-2"
+                                />
+                            </div>
+                        </div>
+                        <div className="flex justify-start mt-2">
+                            <button
+                                onClick={saveAuthCredentials}
+                                disabled={savingAuth || !authForm.username || !authForm.password}
+                                className="px-5 py-2 rounded-xl text-sm font-semibold bg-gray-900 text-white hover:bg-gray-800 disabled:opacity-50 transition-all shadow-sm"
+                            >
+                                {savingAuth ? "Updating..." : authSaved ? "✓ Updated!" : "Update Credentials"}
                             </button>
                         </div>
                     </div>
