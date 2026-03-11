@@ -1,0 +1,38 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Message {
+  id         String   @id @default(uuid())
+  text       String
+  receivedAt DateTime @default(now())
+  status     String   @default("pending")
+  speakers   String   @default("[]")
+  error      String?
+
+  @@index([receivedAt])
+  @@index([status])
+}
+
+model SpeakerSchedule {
+  id          String  @id @default(uuid())
+  speakerName String
+  speakerIp   String?
+  dayOfWeek   Int
+  startTime   String
+  endTime     String
+  enabled     Boolean @default(true)
+
+  @@index([speakerName])
+  @@index([dayOfWeek])
+}
+
+model AppSetting {
+  key   String @id
+  value String
+}

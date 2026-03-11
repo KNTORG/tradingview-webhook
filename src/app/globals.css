@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), "system-ui", "sans-serif";
+  --color-coral-50: #fff5f2;
+  --color-coral-100: #ffe8e0;
+  --color-coral-200: #ffd0c2;
+  --color-coral-300: #ffab91;
+  --color-coral-400: #ff8a65;
+  --color-coral-500: #ff6e40;
+  --color-coral-600: #f4511e;
+  --color-warm-50: #fffcfa;
+  --color-warm-100: #faf6f1;
+  --color-warm-200: #f0ebe4;
+}

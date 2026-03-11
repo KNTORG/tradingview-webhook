@@ -1,0 +1,15 @@
+version: "3.8"
+
+services:
+  trade-alert-speaker:
+    build:
+      context: .
+      dockerfile: Containerfile
+    container_name: trade-alert-speaker
+    network_mode: host
+    restart: unless-stopped
+    environment:
+      - WEBHOOK_SECRET=7f5e1b20a3b8c6e9d4a5f7c3b2e1d0f8
+      - TZ=Asia/Bangkok
+      - DATABASE_URL=file:/app/data/alerts.db
+      - PORT=12345
