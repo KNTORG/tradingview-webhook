@@ -1,10 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 export default function Navbar() {
     const pathname = usePathname();
+    const router = useRouter();
+
+    const handleLogout = async () => {
+        await fetch("/api/auth/logout", { method: "POST" });
+        router.push("/login");
+        router.refresh();
+    };
 
     const links = [
         { href: "/", label: "Dashboard", icon: "📊" },
@@ -57,11 +64,21 @@ export default function Navbar() {
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                        <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                        <span className="text-xs font-medium text-gray-400">
-                            Listening for alerts
-                        </span>
+                    <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                            <span className="text-xs font-medium text-gray-400">
+                                Listening for alerts
+                            </span>
+                        </div>
+                        {pathname !== "/login" && (
+                            <button
+                                onClick={handleLogout}
+                                className="px-3 py-1.5 rounded-lg text-xs font-semibold text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                            >
+                                Logout
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>

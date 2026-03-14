@@ -32,6 +32,11 @@ export default function Dashboard() {
     const [webhookSecret, setWebhookSecret] = useState<string>("dev-secret-change-me");
     const [publicUrl, setPublicUrl] = useState<string>("");
 
+    // Test alert state
+    const [testMessage, setTestMessage] = useState("Test alert from dashboard");
+    const [sendingTest, setSendingTest] = useState(false);
+    const [testResult, setTestResult] = useState<{ success: boolean; message: string } | null>(null);
+
     // Export state
     const [exportDates, setExportDates] = useState({
         startDate: "",
@@ -74,18 +79,71 @@ export default function Dashboard() {
         fetchMessages(pagination.page);
         fetchWebhookSecret();
 
-        // Restore 10s polling
+        // Polling as fallback
         const interval = setInterval(() => {
             fetchMessages(pagination.page);
         }, 10000);
 
-        return () => clearInterval(interval);
+        // SSE for real-time updates
+        let eventSource: EventSource | null = null;
+        try {
+            eventSource = new EventSource("/api/messages/stream");
+            eventSource.onmessage = () => fetchMessages(pagination.page);
+            eventSource.onerror = () => {
+                // SSE failed — polling continues as fallback
+            };
+        } catch {
+            // SSE not supported — polling continues
+        }
+
+        return () => {
+            clearInterval(interval);
+            eventSource?.close();
+        };
     }, [pagination.page, fetchMessages, fetchWebhookSecret]);
 
     const copyWebhookUrl = () => {
-        navigator.clipboard.writeText(webhookUrl);
+        if (navigator.clipboard && window.isSecureContext) {
+            navigator.clipboard.writeText(webhookUrl);
+        } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = webhookUrl;
+            textArea.style.position = "fixed";  // Avoid scrolling to bottom
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.error('Fallback: copy failed', err);
+            }
+            document.body.removeChild(textArea);
+        }
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
+    };
+
+    const sendTestAlert = async () => {
+        setSendingTest(true);
+        setTestResult(null);
+        try {
+            const res = await fetch(`/api/webhook/${webhookSecret}`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: testMessage }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setTestResult({ success: true, message: `Alert sent (${data.status})` });
+            } else {
+                setTestResult({ success: false, message: data.error || "Failed to send" });
+            }
+        } catch (err) {
+            setTestResult({ success: false, message: err instanceof Error ? err.message : "Failed" });
+        } finally {
+            setSendingTest(false);
+            setTimeout(() => setTestResult(null), 4000);
+        }
     };
 
     const handleExport = () => {
@@ -98,7 +156,7 @@ export default function Dashboard() {
     const formatTime = (dateStr: string) => {
         const d = new Date(dateStr);
         return new Intl.DateTimeFormat("en-US", {
-            timeZone: "Asia/Bangkok",
+            timeZone: process.env.NEXT_PUBLIC_TZ || "Asia/Bangkok",
             month: "short",
             day: "numeric",
             hour: "2-digit",
@@ -181,6 +239,43 @@ export default function Dashboard() {
                         {copied ? "✓ Copied" : "Copy"}
                     </button>
                 </div>
+            </div>
+
+            {/* Test Alert Card */}
+            <div className="bg-white rounded-2xl shadow-sm border border-warm-200 p-5">
+                <div className="flex items-center gap-2 mb-3">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-50 flex items-center justify-center">
+                        <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+                        </svg>
+                    </div>
+                    <h2 className="font-semibold text-gray-900">Send Test Alert</h2>
+                </div>
+                <div className="flex items-center gap-3">
+                    <input
+                        type="text"
+                        value={testMessage}
+                        onChange={(e) => setTestMessage(e.target.value)}
+                        placeholder="Enter test message..."
+                        className="flex-1 bg-warm-50 border border-warm-200 rounded-xl px-4 py-3 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-coral-300"
+                    />
+                    <button
+                        onClick={sendTestAlert}
+                        disabled={sendingTest || !testMessage.trim()}
+                        className="px-5 py-3 rounded-xl text-sm font-semibold bg-gradient-to-r from-emerald-400 to-emerald-500 text-white hover:from-emerald-500 hover:to-emerald-600 hover:shadow-md shadow-sm disabled:opacity-50 transition-all flex items-center gap-2"
+                    >
+                        {sendingTest ? (
+                            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                            "Send Test"
+                        )}
+                    </button>
+                </div>
+                {testResult && (
+                    <div className={`mt-3 px-4 py-2 rounded-xl text-sm font-medium ${testResult.success ? "bg-emerald-50 text-emerald-700 border border-emerald-200" : "bg-red-50 text-red-700 border border-red-200"}`}>
+                        {testResult.success ? "✓" : "✕"} {testResult.message}
+                    </div>
+                )}
             </div>
 
             {/* Messages Table */}
