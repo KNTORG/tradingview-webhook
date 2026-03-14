@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 export default function CredentialsForm() {
     const [webhookSecret, setWebhookSecret] = useState("");
     const [publicUrl, setPublicUrl] = useState("");
+    const [timezone, setTimezone] = useState("Asia/Bangkok");
     const [savingSecret, setSavingSecret] = useState(false);
     const [secretSaved, setSecretSaved] = useState(false);
     const [authForm, setAuthForm] = useState({ username: "", password: "" });
@@ -26,6 +27,7 @@ export default function CredentialsForm() {
         const data = await res.json();
         setWebhookSecret(data.secret);
         setPublicUrl(data.publicUrl);
+        if (data.timezone) setTimezone(data.timezone);
     };
 
     const saveWebhookSecret = async () => {
@@ -34,7 +36,7 @@ export default function CredentialsForm() {
             await fetch("/api/settings/webook", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ secret: webhookSecret, publicUrl }),
+                body: JSON.stringify({ secret: webhookSecret, publicUrl, timezone }),
             });
             setSecretSaved(true);
             setTimeout(() => setSecretSaved(false), 2000);
@@ -99,6 +101,23 @@ export default function CredentialsForm() {
                         />
                     </div>
                 </div>
+                {/* Timezone */}
+                <div className="max-w-2xl">
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Timezone</label>
+                    <p className="text-xs text-gray-500 mb-3">
+                        Used for schedule matching. Affects when speakers are active.
+                    </p>
+                    <select
+                        value={timezone}
+                        onChange={(e) => setTimezone(e.target.value)}
+                        className="w-full px-4 py-2.5 rounded-xl border border-warm-200 bg-warm-50 text-sm focus:outline-none focus:ring-2 focus:ring-coral-300 focus:border-transparent font-mono"
+                    >
+                        {Intl.supportedValuesOf("timeZone").map((tz) => (
+                            <option key={tz} value={tz}>{tz}</option>
+                        ))}
+                    </select>
+                </div>
+
                 {/* Webhook Secret */}
                 <div className="max-w-2xl">
                     <label className="block text-sm font-medium text-gray-700 mb-1.5">Webhook Secret Configuration</label>

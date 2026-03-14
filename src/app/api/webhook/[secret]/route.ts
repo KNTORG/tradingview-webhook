@@ -20,7 +20,7 @@ export async function POST(
         // If DB lookup fails, keep using env var
     }
 
-    if (!expectedSecret || secret !== expectedSecret) {
+    if (expectedSecret && secret !== expectedSecret) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

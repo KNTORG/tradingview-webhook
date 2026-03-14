@@ -3,12 +3,13 @@ import { prisma } from "./prisma";
 export const TIMEZONE = process.env.TZ || "Asia/Bangkok";
 
 /**
- * Get the current time in Asia/Bangkok timezone
+ * Get the current time in the configured timezone
  */
 function getNowInTimezone(): { dayOfWeek: number; timeString: string } {
     const now = new Date();
+    const tz = process.env.TZ || "Asia/Bangkok";
     const formatter = new Intl.DateTimeFormat("en-US", {
-        timeZone: TIMEZONE,
+        timeZone: tz,
         weekday: "short",
         hour: "2-digit",
         minute: "2-digit",
