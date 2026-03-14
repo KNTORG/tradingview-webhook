@@ -1,6 +1,6 @@
 import { prisma } from "./prisma";
 
-const TIMEZONE = "Asia/Bangkok";
+export const TIMEZONE = process.env.TZ || "Asia/Bangkok";
 
 /**
  * Get the current time in Asia/Bangkok timezone

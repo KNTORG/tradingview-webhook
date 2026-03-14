@@ -32,6 +32,8 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=12345
 ENV HOSTNAME="0.0.0.0"
+ENV TZ="Asia/Bangkok"
+ENV NEXT_PUBLIC_TZ="Asia/Bangkok"
 
 # Install runtime dependencies (su-exec for dropping privileges)
 RUN apk add --no-cache su-exec openssl avahi-tools
@@ -61,4 +63,6 @@ RUN chmod +x /app/entrypoint.sh
 
 USER root
 EXPOSE 12345
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
+    CMD wget -qO- http://localhost:12345/api/health || exit 1
 ENTRYPOINT ["/app/entrypoint.sh"]
