@@ -23,6 +23,7 @@ model SpeakerSchedule {
   id          String  @id @default(uuid())
   speakerName String
   speakerIp   String?
+  channelType String  @default("chromecast")
   dayOfWeek   Int
   startTime   String
   endTime     String
@@ -30,6 +31,7 @@ model SpeakerSchedule {
 
   @@index([speakerName])
   @@index([dayOfWeek])
+  @@index([channelType])
 }
 
 model AppSetting {

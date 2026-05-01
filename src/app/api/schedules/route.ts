@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rangesOverlap } from "@/lib/schedule";
+import { isLgTvPaired } from "@/lib/lg-tv";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const channelType = request.nextUrl.searchParams.get("channelType") ?? undefined;
+
     const schedules = await prisma.speakerSchedule.findMany({
+        where: channelType ? { channelType } : undefined,
         orderBy: [{ speakerName: "asc" }, { dayOfWeek: "asc" }, { startTime: "asc" }],
     });
 
@@ -13,6 +17,8 @@ export async function GET() {
         {
             speakerName: string;
             speakerIp: string | null;
+            channelType: string;
+            isPaired?: boolean;
             rules: typeof schedules;
         }
     > = {};
@@ -22,13 +28,20 @@ export async function GET() {
             grouped[s.speakerName] = {
                 speakerName: s.speakerName,
                 speakerIp: s.speakerIp,
+                channelType: s.channelType,
                 rules: [],
             };
         } else if (!grouped[s.speakerName].speakerIp && s.speakerIp) {
-            // Pick a non-null IP if the first one was null
             grouped[s.speakerName].speakerIp = s.speakerIp;
         }
         grouped[s.speakerName].rules.push(s);
+    }
+
+    // Annotate LG TV entries with pairing status
+    for (const group of Object.values(grouped)) {
+        if (group.channelType === "lgtv" && group.speakerIp) {
+            group.isPaired = isLgTvPaired(group.speakerIp);
+        }
     }
 
     return NextResponse.json({ speakers: Object.values(grouped) });
@@ -38,6 +51,7 @@ export async function POST(request: NextRequest) {
     let body: {
         speakerName: string;
         speakerIp?: string;
+        channelType?: string;
         dayOfWeek: number;
         startTime: string;
         endTime: string;
@@ -99,6 +113,7 @@ export async function POST(request: NextRequest) {
         data: {
             speakerName: body.speakerName,
             speakerIp: body.speakerIp || null,
+            channelType: body.channelType ?? "chromecast",
             dayOfWeek: body.dayOfWeek,
             startTime: body.startTime,
             endTime: body.endTime,

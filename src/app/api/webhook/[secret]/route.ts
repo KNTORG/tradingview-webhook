@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getActiveSpeakers } from "@/lib/schedule";
 import { castToSpeaker } from "@/lib/google-home";
+import { sendLgTvToast } from "@/lib/lg-tv";
 import { addToRetryQueue } from "@/lib/retry-queue";
 import { notifyClients } from "@/lib/sse-clients";
 
@@ -69,8 +70,43 @@ export async function POST(
 function processWebhookInBackground(messageId: string, text: string) {
     (async () => {
         try {
-            const activeSpeakers = await getActiveSpeakers();
+            const activeChannels = await getActiveSpeakers();
 
+            if (activeChannels.length === 0) {
+                await prisma.message.update({
+                    where: { id: messageId },
+                    data: { status: "silenced", speakers: "[]" },
+                });
+                notifyClients();
+                return;
+            }
+
+            const activeTvs = activeChannels.filter((c) => c.channelType === "lgtv");
+            const activeSpeakers = activeChannels.filter((c) => c.channelType !== "lgtv");
+
+            // TV-first: if TV schedule is active and TV is on, use TV only.
+            // If TV is off/unreachable, fall through to speakers.
+            if (activeTvs.length > 0) {
+                for (const tv of activeTvs) {
+                    if (!tv.speakerIp) continue;
+                    const sent = await sendLgTvToast(tv.speakerIp, text);
+                    if (sent) {
+                        await prisma.message.update({
+                            where: { id: messageId },
+                            data: {
+                                status: "spoken",
+                                speakers: JSON.stringify([tv.speakerName]),
+                                error: null,
+                            },
+                        });
+                        notifyClients();
+                        return; // TV handled it — skip speakers
+                    }
+                    console.warn(`[LgTv] ${tv.speakerName} (${tv.speakerIp}) is off — falling back to speakers`);
+                }
+            }
+
+            // No TV handled the alert — send to active speakers
             if (activeSpeakers.length === 0) {
                 await prisma.message.update({
                     where: { id: messageId },
@@ -93,6 +129,7 @@ function processWebhookInBackground(messageId: string, text: string) {
                             text,
                             speakerName: speaker.speakerName,
                             speakerIp: speaker.speakerIp,
+                            channelType: speaker.channelType,
                             attempts: 0,
                         });
                         return { speakerName: speaker.speakerName, success: false, error: errorMsg };
