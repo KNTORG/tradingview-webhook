@@ -2,6 +2,7 @@ export interface ScheduleRule {
     id: string;
     speakerName: string;
     speakerIp: string | null;
+    channelType: string;
     dayOfWeek: number;
     startTime: string;
     endTime: string;
@@ -11,6 +12,8 @@ export interface ScheduleRule {
 export interface SpeakerGroup {
     speakerName: string;
     speakerIp: string | null;
+    channelType: string;
+    isPaired?: boolean;
     rules: ScheduleRule[];
 }
 

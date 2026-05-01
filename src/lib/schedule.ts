@@ -57,6 +57,7 @@ export function isTimeInRange(
 export interface ActiveSpeaker {
     speakerName: string;
     speakerIp: string | null;
+    channelType: string;
 }
 
 /**
@@ -153,7 +154,8 @@ export async function getActiveSpeakers(): Promise<ActiveSpeaker[]> {
         }
 
         if (isActive) {
-            activeSpeakers.set(speakerName, { speakerName, speakerIp: activeIp });
+            const channelType = schedules[0].channelType ?? "chromecast";
+            activeSpeakers.set(speakerName, { speakerName, speakerIp: activeIp, channelType });
         }
     }
 

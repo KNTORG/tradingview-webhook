@@ -32,7 +32,7 @@ export default function ScheduleManager() {
 
     const fetchSchedules = async () => {
         try {
-            const res = await fetch("/api/schedules");
+            const res = await fetch("/api/schedules?channelType=chromecast");
             const data = await res.json();
             setSpeakers(data.speakers);
         } catch (err) {

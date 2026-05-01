@@ -10,6 +10,7 @@ export interface RetryJob {
     text: string;
     speakerName: string;
     speakerIp: string | null;
+    channelType: string;
     attempts: number;
 }
 

@@ -18,6 +18,7 @@
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "google-tts-api": "^2.0.2",
+    "lgtv2": "^1.6.3",
     "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
