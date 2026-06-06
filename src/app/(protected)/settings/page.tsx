@@ -6,6 +6,7 @@ import ScheduleManager from "@/components/settings/ScheduleManager";
 import LgTvManager from "@/components/settings/LgTvManager";
 import DatabaseTools from "@/components/settings/DatabaseTools";
 import CredentialsForm from "@/components/settings/CredentialsForm";
+import QuietHoursManager from "@/components/settings/QuietHoursManager";
 
 export default function SettingsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
@@ -40,6 +41,13 @@ export default function SettingsPage() {
 
                 {/* Speaker Schedule Cards */}
                 <ScheduleManager key={refreshKey} />
+            </section>
+
+            <hr className="border-warm-200" />
+
+            {/* Quiet Hours / Do Not Disturb */}
+            <section className="space-y-4">
+                <QuietHoursManager />
             </section>
 
             <hr className="border-warm-200" />

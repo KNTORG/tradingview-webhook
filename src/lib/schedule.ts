@@ -107,6 +107,40 @@ export function rangesOverlap(
 }
 
 /**
+ * Check if the current time falls within any enabled global "Quiet Hours"
+ * (Do Not Disturb) window. Quiet windows are stored as a JSON array in the
+ * `mute_windows` AppSetting and apply to ALL output channels.
+ */
+export async function isMuted(): Promise<boolean> {
+    let windows: Array<{
+        dayOfWeek: number;
+        startTime: string;
+        endTime: string;
+        enabled: boolean;
+    }> = [];
+
+    try {
+        const setting = await prisma.appSetting.findUnique({
+            where: { key: "mute_windows" },
+        });
+        if (setting?.value) windows = JSON.parse(setting.value);
+    } catch {
+        return false;
+    }
+
+    if (!Array.isArray(windows) || windows.length === 0) return false;
+
+    const { dayOfWeek, timeString } = getNowInTimezone();
+
+    return windows.some(
+        (w) =>
+            w.enabled &&
+            (w.dayOfWeek === -1 || w.dayOfWeek === dayOfWeek) &&
+            isTimeInRange(timeString, w.startTime, w.endTime)
+    );
+}
+
+/**
  * Get all speakers that are currently active based on their schedules.
  * A speaker is active if it has at least one enabled schedule rule
  * matching the current day of week and time (in Asia/Bangkok timezone).

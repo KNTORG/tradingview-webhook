@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { getActiveSpeakers } from "@/lib/schedule";
+import { getActiveSpeakers, isMuted } from "@/lib/schedule";
 import { castToSpeaker } from "@/lib/google-home";
 import { sendLgTvToast } from "@/lib/lg-tv";
 import { addToRetryQueue } from "@/lib/retry-queue";
@@ -70,6 +70,17 @@ export async function POST(
 function processWebhookInBackground(messageId: string, text: string) {
     (async () => {
         try {
+            // Quiet Hours (Do Not Disturb): if a global mute window is active,
+            // log the message but skip all output channels.
+            if (await isMuted()) {
+                await prisma.message.update({
+                    where: { id: messageId },
+                    data: { status: "muted", speakers: "[]" },
+                });
+                notifyClients();
+                return;
+            }
+
             const activeChannels = await getActiveSpeakers();
 
             if (activeChannels.length === 0) {

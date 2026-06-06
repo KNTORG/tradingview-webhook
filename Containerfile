@@ -63,6 +63,11 @@ RUN chmod +x /app/entrypoint.sh
 
 USER root
 EXPOSE 12345
-HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
-    CMD wget -qO- http://localhost:12345/api/health || exit 1
+# Probe the port the app actually listens on ($PORT), not a hardcoded one —
+# in host-network deployments PORT is often overridden to avoid host conflicts.
+# Use 127.0.0.1, NOT localhost: under Docker, localhost resolves to IPv6 ::1 first,
+# but the Next.js server binds IPv4 only (HOSTNAME=0.0.0.0) → ::1 is refused.
+# --start-period gives the runtime DB init / first boot time before counting failures.
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=60s \
+    CMD wget -qO- "http://127.0.0.1:${PORT:-12345}/api/health" || exit 1
 ENTRYPOINT ["/app/entrypoint.sh"]
