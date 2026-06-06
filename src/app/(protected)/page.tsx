@@ -177,6 +177,11 @@ export default function Dashboard() {
             classes:
                 "bg-amber-50 text-amber-700 border border-amber-200",
         },
+        muted: {
+            label: "Muted",
+            classes:
+                "bg-purple-50 text-purple-700 border border-purple-200",
+        },
         failed: {
             label: "Failed",
             classes: "bg-red-50 text-red-700 border border-red-200",

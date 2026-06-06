@@ -9,6 +9,14 @@ export interface ScheduleRule {
     enabled: boolean;
 }
 
+export interface MuteWindow {
+    id: string;
+    dayOfWeek: number; // -1 = every day, 0..6 = Sun..Sat
+    startTime: string; // "HH:mm"
+    endTime: string; // "HH:mm"
+    enabled: boolean;
+}
+
 export interface SpeakerGroup {
     speakerName: string;
     speakerIp: string | null;

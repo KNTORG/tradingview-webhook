@@ -5,3 +5,7 @@ tsconfig.tsbuildinfo
 .env
 .env.local
 .env*.local
+
+# Local dev SQLite database
+prisma/dev.db
+prisma/dev.db-journal

@@ -14,6 +14,7 @@ Receive TradingView webhook alerts and instantly broadcast them through Google H
 - **TV-First Routing** — When TV schedule is active: TV on → alert on TV only; TV off → falls back to active speakers automatically
 - **Per-Channel Schedules** — Set active hours per device per day (supports overnight ranges like 22:00–06:00)
 - **Global Time Override** — One-click override that applies to all days, disabling individual daily schedules
+- **Quiet Hours / Do Not Disturb** — Global mute windows (e.g. Mon–Fri 11:00–12:00) that silence every channel during meetings; alerts still arrive and are logged as `muted`, just not announced
 - **Auto-Discovery** — Finds Google Home speakers on your network via mDNS (Avahi or Bonjour)
 - **Real-Time Dashboard** — Live-updating alert feed via Server-Sent Events with automatic polling fallback
 - **Send Test Alerts** — One-click test button on the dashboard to verify the full pipeline
@@ -133,6 +134,13 @@ Is LG TV schedule active?
 | `PORT` | `12345` | HTTP server port |
 | `SECURE_COOKIES` | *(not set)* | Set to `true` to enable secure cookies (HTTPS only) |
 
+### Health check & `PORT` overrides
+
+The container's `HEALTHCHECK` probes `http://127.0.0.1:${PORT}/api/health`. Two things matter when running under host networking (required for mDNS):
+
+- **Override the port via the `PORT` env var, not a port mapping.** With host networking there is no host→container remap, so if `12345` is taken on the host, set `PORT=55555` (or similar). The healthcheck follows `$PORT` automatically.
+- **The probe uses `127.0.0.1`, not `localhost`.** Under Docker, `localhost` can resolve to IPv6 `::1`, but the server binds IPv4 only (`HOSTNAME=0.0.0.0`) — a `localhost` probe would fail and the orchestrator (e.g. TrueNAS) would keep the app stuck on "Deploying" even though it works.
+
 ## API Endpoints
 
 | Method | Path | Auth | Description |
@@ -148,6 +156,8 @@ Is LG TV schedule active?
 | `POST` | `/api/schedules` | Session | Create schedule rule |
 | `PUT` | `/api/schedules/:id` | Session | Update schedule rule |
 | `DELETE` | `/api/schedules/:id` | Session | Delete schedule rule |
+| `GET` | `/api/settings/mute` | Session | List global Quiet Hours windows |
+| `POST` | `/api/settings/mute` | Session | Replace Quiet Hours windows |
 | `POST` | `/api/lgtv/pair` | Session | Pair LG TV and create default schedules |
 | `GET` | `/api/lgtv/pair?ip=` | Session | Check TV pairing status |
 | `POST` | `/api/lgtv/test` | Session | Send test toast to LG TV |
